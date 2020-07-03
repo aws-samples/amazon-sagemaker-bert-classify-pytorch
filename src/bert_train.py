@@ -72,7 +72,11 @@ class Train:
 
         no_improvement_epochs = 0
         model_network.to(device=self.device)
+
         for epoch in range(self.epochs):
+            losses_train = []
+            actual_train = []
+            predicted_train = []
 
             self.logger.debug("Running epoch {}".format(self.epochs))
 
@@ -97,6 +101,9 @@ class Train:
                 # Step 4. Compute loss
                 self.logger.debug("Running loss")
                 loss = loss_function(predicted, batch_y)
+                losses_train.append(loss.item())
+                actual_train.extend(batch_y.cpu().tolist())
+                predicted_train.extend(predicted.cpu().tolist())
 
                 # Step 5. Do the backward pass and update the gradient
                 # this would accumulate gradient
@@ -107,8 +114,8 @@ class Train:
 
             # Print training set results
             self.logger.info("Train set result details:")
-            actuals_train, predicted_train, train_loss = self.validate(loss_function, model_network, data_iter)
-            train_score = accuracy_score(y_actual=actuals_train, y_pred=predicted_train, pos_label=pos_label.item())
+            train_loss = sum(losses_train) / len(losses_train)
+            train_score = accuracy_score(y_actual=actual_train, y_pred=predicted_train, pos_label=pos_label.item())
             self.logger.info("Train set result details: {}".format(train_score))
 
             # Print validation set results
@@ -161,7 +168,7 @@ class Train:
             actuals = torch.tensor([]).to(device=self.device)
             predicted = torch.tensor([]).to(device=self.device)
             for idx, val in enumerate(val_iter):
-                val_batch_idx = [t.to(device=self.device) for t in val[0]]
+                val_batch_idx = val[0].to(device=self.device)
                 val_y = val[1].to(device=self.device)
                 pred_batch_y = model_network(val_batch_idx)
                 scores.append([pred_batch_y])
