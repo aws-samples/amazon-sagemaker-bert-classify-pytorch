@@ -1,0 +1,4 @@
+sagemaker==1.67.1
+boto3==1.13.26
+scikit-learn==0.23.1
+jupyter==1.0.0
