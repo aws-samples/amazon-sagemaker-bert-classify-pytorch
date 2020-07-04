@@ -30,7 +30,8 @@ class Builder:
 
     def __init__(self, train_data, val_data, labels_file, num_workers=None, checkpoint_dir=None, epochs=10,
                  early_stopping_patience=10, checkpoint_frequency=1, grad_accumulation_steps=1, batch_size=10,
-                 max_seq_len=10, learning_rate=0.0001):
+                 max_seq_len=10, learning_rate=0.0001, fine_tune=True):
+        self.fine_tune = fine_tune
         self.learning_rate = learning_rate
         self.checkpoint_frequency = checkpoint_frequency
         self.grad_accumulation_steps = grad_accumulation_steps
@@ -68,7 +69,8 @@ class Builder:
 
     def get_network(self):
         if self._network is None:
-            self._network = BertModel(self._bert_model_name, self.get_label_mapper().num_classes)
+            self._network = BertModel(self._bert_model_name, self.get_label_mapper().num_classes,
+                                      fine_tune=self.fine_tune)
 
         return self._network
 
