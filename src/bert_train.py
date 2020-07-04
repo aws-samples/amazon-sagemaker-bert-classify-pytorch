@@ -98,12 +98,14 @@ class Train:
 
                 # Step 4. Compute loss
                 self.logger.debug("Running loss")
-                loss = loss_function(predicted, batch_y)
+                loss = loss_function(predicted, batch_y) / self.accumulation_steps
+                loss.backward()
+
                 losses_train.append(loss.item())
                 actual_train.extend(batch_y.cpu().tolist())
                 predicted_train.extend(torch.max(predicted, 1)[1].view(-1).cpu().tolist())
 
-                # Step 5. Do the backward pass and update the gradient
+                # Step 5. Only update weights after weights are accumulated for n steps
                 # this would accumulate gradient
                 if (idx + 1) % self.accumulation_steps == 0:
                     self.logger.debug("Running backward")
