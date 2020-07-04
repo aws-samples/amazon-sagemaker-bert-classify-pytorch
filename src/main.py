@@ -73,7 +73,7 @@ def main():
     trainer = b.get_trainer()
 
     train_dataloader, val_dataloader = b.get_train_val_dataloader()
-    trainer.run_train(data_iter=train_dataloader,
+    trainer.run_train(train_iter=train_dataloader,
                       validation_iter=val_dataloader,
                       model_network=b.get_network(),
                       loss_function=b.get_loss_function(),

@@ -48,15 +48,13 @@ class Train:
 
         torch.save(model, snapshot_path)
 
-    def run_train(self, data_iter, validation_iter, model_network, loss_function, optimizer, model_dir, pos_label):
+    def run_train(self, train_iter, validation_iter, model_network, loss_function, optimizer, model_dir, pos_label):
         """
     Runs train...
         :param pos_label:
         :param model_dir:
         :param validation_iter: Validation set
-        :param epochs:
-        :param device: For CPU -1, else set GPU device id
-        :param data_iter: Torchtext dataset object. The each feature must be the index of word vocab
+        :param train_iter: Train Data 
         :param model_network: A neural network
         :param loss_function: Pytorch loss function
         :param optimizer: Optimiser
@@ -80,7 +78,7 @@ class Train:
 
             self.logger.debug("Running epoch {}".format(self.epochs))
 
-            for idx, batch in enumerate(data_iter):
+            for idx, batch in enumerate(train_iter):
                 self.logger.debug("Running batch {}".format(idx))
                 batch_x = batch[0].to(device=self.device)
                 batch_y = batch[1].to(device=self.device)
@@ -141,8 +139,8 @@ class Train:
 
             # evaluate performance on validation set periodically
             self.logger.info(val_log_template.format((datetime.datetime.now() - start).seconds,
-                                                     epoch, iterations, 1 + len(batch_x), len(data_iter),
-                                                     100. * (1 + len(batch_x)) / len(data_iter), train_loss,
+                                                     epoch, iterations, 1 + len(batch_x), len(train_iter),
+                                                     100. * (1 + len(batch_x)) / len(train_iter), train_loss,
                                                      val_loss, train_score,
                                                      val_score))
 
