@@ -36,7 +36,7 @@ class TestBertTrain(TestCase):
 
         # Mock loss function to return a scalar value
         mock_loss = MagicMock()
-        mock_loss.return_value = torch.tensor(0.0)
+        mock_loss.return_value = torch.tensor(0.0, requires_grad=True)
 
         # Mock model call for classification to return a tuple tensor that is shaped ([input_size, num_classes],)
         mock_network = MagicMock()
