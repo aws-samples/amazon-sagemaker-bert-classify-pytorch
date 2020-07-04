@@ -42,7 +42,7 @@ class ItTestBertTrain(TestCase):
         modeldir = tempfile.mkdtemp()
         batch_size = 4
         lr = 0.001
-        grad_acc_steps = 8
+        grad_acc_steps = 2
 
         train_data_file = os.path.join(os.path.dirname(__file__), "..", "sample_dbpedia.csv")
         val_data_file = os.path.join(os.path.dirname(__file__), "..", "sample_dbpedia.csv")

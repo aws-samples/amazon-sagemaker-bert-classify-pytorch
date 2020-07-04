@@ -17,8 +17,9 @@ import os
 from torch import nn
 from torch.optim import Adam
 from torch.utils.data import DataLoader
-from transformers import BertTokenizer, BertForSequenceClassification
+from transformers import BertTokenizer
 
+from bert_model import BertModel
 from bert_train import Train
 from dbpedia_dataset import DbpediaDataset
 from dbpedia_dataset_label_mapper import DbpediaLabelMapper
@@ -67,8 +68,7 @@ class Builder:
 
     def get_network(self):
         if self._network is None:
-            self._network = BertForSequenceClassification.from_pretrained(self._bert_model_name,
-                                                                          num_labels=self.get_label_mapper().num_classes)
+            self._network = BertModel(self._bert_model_name, self.get_label_mapper().num_classes)
 
         return self._network
 
