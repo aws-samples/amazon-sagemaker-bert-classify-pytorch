@@ -182,7 +182,7 @@ class Train:
 
         # Average loss
         val_loss = val_loss / len(actuals)
-        return actuals.cpu().numpy().tolist(), predicted.cpu().numpy().tolist(), val_loss
+        return actuals.cpu().tolist(), predicted.cpu().tolist(), val_loss
 
     def create_checkpoint(self, model, checkpoint_dir):
         checkpoint_path = os.path.join(checkpoint_dir, 'checkpoint.pt')
