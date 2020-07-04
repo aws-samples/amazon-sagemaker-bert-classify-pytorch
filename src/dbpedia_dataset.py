@@ -1,6 +1,5 @@
 import csv
 
-import torch
 from torch.utils.data import Dataset
 
 
@@ -30,4 +29,4 @@ class DbpediaDataset(Dataset):
         if self.preprocessor:
             x = self.preprocessor(x)
 
-        return torch.tensor(x), torch.tensor(y)
+        return x, y

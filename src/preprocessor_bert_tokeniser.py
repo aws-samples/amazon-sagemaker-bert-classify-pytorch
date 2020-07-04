@@ -12,6 +12,7 @@
 #  express or implied. See the License for the specific language governing    *
 #  permissions and limitations under the License.                             *
 # *****************************************************************************
+import torch
 
 
 class PreprocessorBertTokeniser:
@@ -41,7 +42,8 @@ class PreprocessorBertTokeniser:
         self.item = item
         self.tokenise() \
             .sequence_pad() \
-            .token_to_index()
+            .token_to_index() \
+            .to_tensor()
 
         return self.item
 
@@ -72,4 +74,13 @@ class PreprocessorBertTokeniser:
         result = ['[CLS]'] + tokens + pad_tokens + ['[SEP]']
 
         self.item = result
+        return self
+
+    def to_tensor(self):
+        """
+        Converts the tokens to fixed size and formats it according to bert
+        :return: self
+        """
+
+        self.item = torch.tensor(self.item)
         return self
