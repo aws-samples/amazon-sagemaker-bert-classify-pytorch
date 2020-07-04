@@ -38,7 +38,7 @@ class TestBertTrain(TestCase):
         mock_loss = MagicMock()
         mock_loss.return_value = torch.tensor(0.0)
 
-        # Mock model call for classification to return a tensor that is shaped [input_size, num_classes]
+        # Mock model call for classification to return a tuple tensor that is shaped ([input_size, num_classes],)
         mock_network = MagicMock()
         mock_network.side_effect = lambda x: (torch.rand(size=(x.shape[0], num_classes)),)
 
