@@ -30,16 +30,19 @@ class TestBertTrain(TestCase):
         """
         sut = Train(epochs=1)
         batch_size = 10
-        sequence_len = 10
-        vocab_size = 20
-        num_classes = 10
+        sequence_len = 20
+        vocab_size = 5
+        num_classes = 3
 
+        # Mock loss function to return a scalar value
         mock_loss = MagicMock()
         mock_loss.return_value = torch.tensor(0.0)
 
+        # Mock model call for classification to return a tensor that is shaped [input_size, num_classes]
         mock_network = MagicMock()
-        mock_network.return_value = (torch.rand(size=(batch_size, num_classes)),)
+        mock_network.side_effect = lambda x: (torch.rand(size=(x.shape[0], num_classes)),)
 
+        # Mock optimiser
         mock_optmiser = MagicMock()
 
         tmp_dir = tempfile.mkdtemp()
