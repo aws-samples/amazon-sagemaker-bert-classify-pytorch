@@ -91,7 +91,7 @@ class Builder:
         return self._label_mapper
 
     def get_pos_label_index(self):
-        return self.get_label_mapper().pos_label_index
+        return self.get_label_mapper().positive_label_index
 
     def get_train_val_dataloader(self):
         if self._train_dataloader is None:

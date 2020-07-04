@@ -33,9 +33,9 @@ class DbpediaLabelMapper:
         return len(self._reverse_map)
 
     @property
-    def pos_label(self):
+    def positive_label(self):
         return self.reverse_map(0)
 
     @property
-    def pos_label_index(self):
-        return self.map(self.pos_label)
+    def positive_label_index(self):
+        return self.map(self.positive_label)
