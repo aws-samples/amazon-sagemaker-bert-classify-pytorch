@@ -106,7 +106,6 @@ class Train:
                 predicted_train.extend(torch.max(predicted, 1)[1].view(-1).cpu().tolist())
 
                 # Step 5. Only update weights after weights are accumulated for n steps
-                # this would accumulate gradient
                 if (idx + 1) % self.accumulation_steps == 0:
                     self.logger.debug("Running backward")
                     optimizer.step()
