@@ -47,6 +47,7 @@ def main():
     parser.add_argument("--epochs", help="The number of epochs", type=int, default=10)
     parser.add_argument("--gradaccumulation", help="The number of gradient accumulation steps", type=int, default=1)
     parser.add_argument("--batch", help="The batchsize", type=int, default=32)
+    parser.add_argument("--lr", help="The learning rate", type=float, default=0.0001)
     parser.add_argument("--maxseqlen",
                         help="The max sequence len, any input that is greater than this will be truncated and fed into the network. If too large, the the bert model will not support it or you will end up Cuda OOM error! ",
                         type=int, default=256)
@@ -68,7 +69,8 @@ def main():
 
     b = Builder(train_data=train_data_file, val_data=val_data_file, labels_file=classes_file,
                 checkpoint_dir=args.checkpointdir, epochs=args.epochs,
-                early_stopping_patience=args.earlystoppingpatience, batch_size=args.batch, max_seq_len=args.maxseqlen)
+                early_stopping_patience=args.earlystoppingpatience, batch_size=args.batch, max_seq_len=args.maxseqlen,
+                learning_rate=args.lr)
 
     trainer = b.get_trainer()
 
