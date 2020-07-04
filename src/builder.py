@@ -29,7 +29,8 @@ class Builder:
 
     def __init__(self, train_data, val_data, labels_file, num_workers=None, checkpoint_dir=None, epochs=10,
                  early_stopping_patience=10, checkpoint_frequency=1, grad_accumulation_steps=1, batch_size=10,
-                 max_seq_len=10):
+                 max_seq_len=10, learning_rate=0.0001):
+        self.learning_rate = learning_rate
         self.checkpoint_frequency = checkpoint_frequency
         self.grad_accumulation_steps = grad_accumulation_steps
         self.early_stopping_patience = early_stopping_patience
@@ -53,8 +54,8 @@ class Builder:
         if self.num_workers <= 0:
             self.num_workers = 0
 
-        self._bert_model_name = "bert-base-uncased"
-        self._token_lower_case = True
+        self._bert_model_name = "bert-base-cased"
+        self._token_lower_case = False
         # Note: Since the max seq len for pos embedding is 512 , in the pretrained  bert this must be less than eq to 512
         # Also note increasing the length greater also will create GPU out of mememory error
         self._max_seq_len = max_seq_len
@@ -95,11 +96,11 @@ class Builder:
     def get_train_val_dataloader(self):
         if self._train_dataloader is None:
             self._train_dataloader = DataLoader(dataset=self.get_train_dataset(), num_workers=self.num_workers,
-                                                batch_size=self.batch_size)
+                                                batch_size=self.batch_size, shuffle=True)
 
         if self._val_dataloader is None:
             self._val_dataloader = DataLoader(dataset=self.get_val_dataset(), num_workers=self.num_workers,
-                                              batch_size=self.batch_size)
+                                              batch_size=self.batch_size, shuffle=False)
 
         return self._train_dataloader, self._val_dataloader
 
@@ -110,7 +111,7 @@ class Builder:
 
     def get_optimiser(self):
         if self._optimiser is None:
-            self._optimiser = Adam(params=self.get_network().parameters())
+            self._optimiser = Adam(params=self.get_network().parameters(), lr=self.learning_rate)
         return self._optimiser
 
     def get_trainer(self):
