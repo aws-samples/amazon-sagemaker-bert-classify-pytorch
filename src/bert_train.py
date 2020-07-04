@@ -107,7 +107,7 @@ class Train:
 
                 # Step 5. Only update weights after weights are accumulated for n steps
                 if (idx + 1) % self.accumulation_steps == 0:
-                    self.logger.debug("Running backward")
+                    self.logger.debug("Running optimiser")
                     optimizer.step()
                     model_network.zero_grad()
 
