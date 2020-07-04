@@ -103,7 +103,7 @@ class Train:
                 loss = loss_function(predicted, batch_y)
                 losses_train.append(loss.item())
                 actual_train.extend(batch_y.cpu().tolist())
-                predicted_train.extend(predicted.cpu().tolist())
+                predicted_train.extend(torch.max(predicted, 1)[1].view(-1).cpu().tolist())
 
                 # Step 5. Do the backward pass and update the gradient
                 # this would accumulate gradient
@@ -115,13 +115,13 @@ class Train:
             # Print training set results
             self.logger.info("Train set result details:")
             train_loss = sum(losses_train) / len(losses_train)
-            train_score = accuracy_score(y_actual=actual_train, y_pred=predicted_train, pos_label=pos_label.item())
+            train_score = accuracy_score(actual_train, predicted_train)
             self.logger.info("Train set result details: {}".format(train_score))
 
             # Print validation set results
             self.logger.info("Validation set result details:")
             val_actuals, val_predicted, val_loss = self.validate(loss_function, model_network, validation_iter)
-            val_score = accuracy_score(y_actual=val_actuals, y_pred=val_predicted, pos_label=pos_label.item())
+            val_score = accuracy_score(val_actuals, val_predicted)
             self.logger.info("Validation set result details: {} ".format(val_score))
 
             # Snapshot best score
@@ -129,7 +129,7 @@ class Train:
                 best_results = (val_score, val_actuals, val_predicted)
                 self.logger.info(
                     "Snapshotting because the current score {} is greater than {} ".format(val_score, best_score))
-                self.snapshotter(model_network, output_dir=model_dir)
+                self.snapshot(model_network, model_dir=model_dir)
                 best_score = val_score
                 no_improvement_epochs = 0
             else:
@@ -160,25 +160,30 @@ class Train:
     def validate(self, loss_function, model_network, val_iter):
         # switch model to evaluation mode
         model_network.eval()
-        # calculate accuracy on validation set
-        n_val_correct, val_loss = 0, 0
 
-        scores = []
+        # total loss
+        val_loss = 0
+
+        actuals = torch.tensor([], dtype=torch.long).to(device=self.device)
+        predicted = torch.tensor([], dtype=torch.long).to(device=self.device)
+
         with torch.no_grad():
-            actuals = torch.tensor([]).to(device=self.device)
-            predicted = torch.tensor([]).to(device=self.device)
+
             for idx, val in enumerate(val_iter):
                 val_batch_idx = val[0].to(device=self.device)
                 val_y = val[1].to(device=self.device)
-                pred_batch_y = model_network(val_batch_idx)
-                scores.append([pred_batch_y])
-                pred_flat = torch.max(pred_batch_y, 1)[1].view(val_y.size())
-                n_val_correct += (pred_flat == val_y).sum().item()
-                val_loss += loss_function(pred_batch_y, val_y).item()
-                actuals = torch.cat([actuals.long(), val_y])
-                predicted = torch.cat([predicted.long(), pred_flat])
 
-        self.logger.debug("The validation confidence scores are {}".format(scores))
+                pred_batch_y = model_network(val_batch_idx)[0]
+
+                # compute loss
+                val_loss += loss_function(pred_batch_y, val_y).item()
+
+                actuals = torch.cat([actuals, val_y])
+                pred_flat = torch.max(pred_batch_y, dim=1)[1].view(-1)
+                predicted = torch.cat([predicted, pred_flat])
+
+        # Average loss
+        val_loss = val_loss / len(actuals)
         return actuals.cpu().numpy().tolist(), predicted.cpu().numpy().tolist(), val_loss
 
     def create_checkpoint(self, model, checkpoint_dir):
