@@ -27,26 +27,28 @@ def main():
     parser.add_argument("--traindir",
                         help="The input train  dir", default=os.environ.get("SM_CHANNEL_TRAIN", "."))
 
+    parser.add_argument("--valfile",
+                        help="The input val file wrt to val  dir", required=True)
+    parser.add_argument("--valdir",
+                        help="The input val dir", default=os.environ.get("SM_CHANNEL_VAL", "."))
+
     parser.add_argument("--classfile",
                         help="The classes txt file which is a list of classes for dbpedia", required=True)
     parser.add_argument("--classdir",
                         help="The class file  dir", default=os.environ.get("SM_CHANNEL_CLASS", "."))
 
-    parser.add_argument("--valfile",
-                        help="The input val file wrt to val  dir", required=True)
-    parser.add_argument("--valdir",
-                        help="The input val dir", default=os.environ.get("SM_CHANNEL_VAL", "."))
-    parser.add_argument("--embeddingfile", help="The embedding file wrt to the embedding dir", required=False)
-    parser.add_argument("--embeddingdir", help="The embedding dir",
-                        default=os.environ.get("SM_CHANNEL_EMBEDDING", "."))
     parser.add_argument("--outdir", help="The output dir", default=os.environ.get("SM_OUTPUT_DATA_DIR", "."))
     parser.add_argument("--modeldir", help="The model dir", default=os.environ.get("SM_MODEL_DIR", "."))
     parser.add_argument("--checkpointdir", help="The checkpoint dir", default=None)
     parser.add_argument("--checkpointfreq",
                         help="The checkpoint frequency, only applies if the checkpoint dir is set", default=1)
+
+    parser.add_argument("--earlystoppingpatience", help="The number of patience epochs", type=int,
+                        default=10)
     parser.add_argument("--epochs", help="The number of epochs", type=int, default=10)
     parser.add_argument("--gradaccumulation", help="The number of gradient accumulation steps", type=int, default=1)
     parser.add_argument("--batch", help="The batchsize", type=int, default=32)
+
     parser.add_argument("--lr", help="The learning rate", type=float, default=0.0001)
     parser.add_argument("--finetune", help="Fine tunes the final layer (classifier) model instead of the entire model",
                         type=bool, default=int, choices={1, 0})
@@ -54,8 +56,6 @@ def main():
                         help="The max sequence len, any input that is greater than this will be truncated and fed into the network. If too large, the the bert model will not support it or you will end up Cuda OOM error! ",
                         type=int, default=256)
 
-    parser.add_argument("--earlystoppingpatience", help="The number of patience epochs", type=int,
-                        default=10)
     parser.add_argument("--log-level", help="Log level", default="INFO", choices={"INFO", "WARN", "DEBUG", "ERROR"})
     args = parser.parse_args()
 
