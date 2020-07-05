@@ -78,7 +78,7 @@ class PreprocessorBertTokeniser:
 
     def to_tensor(self):
         """
-        Converts the tokens to fixed size and formats it according to bert
+        Converts list of int to tensor
         :return: self
         """
 
