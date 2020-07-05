@@ -51,7 +51,7 @@ def main():
 
     parser.add_argument("--lr", help="The learning rate", type=float, default=0.0001)
     parser.add_argument("--finetune", help="Fine tunes the final layer (classifier) model instead of the entire model",
-                        type=bool, default=int, choices={1, 0})
+                        type=int, default=0, choices={1, 0})
     parser.add_argument("--maxseqlen",
                         help="The max sequence len, any input that is greater than this will be truncated and fed into the network. If too large, the the bert model will not support it or you will end up Cuda OOM error! ",
                         type=int, default=256)
