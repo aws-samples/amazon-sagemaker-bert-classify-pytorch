@@ -195,14 +195,12 @@ class Train:
         torch.save(model, checkpoint_path)
 
     def try_load_model_from_checkpoint(self):
-        is_loaded_from_checkpoint = False
-
+        model = None
         if self.checkpoint_dir is not None:
             model_files = list(glob.glob("{}/*.pt".format(self.checkpoint_dir)))
             if len(model_files) > 0:
                 model_file = model_files[0]
                 self._logger.info(
                     "Loading checkpoint {} , found {} checkpoint files".format(model_file, len(model_files)))
-                self._network = torch.load(model_file)
-                is_loaded_from_checkpoint = True
-        return is_loaded_from_checkpoint
+                model = torch.load(model_file)
+        return model
