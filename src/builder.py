@@ -76,7 +76,7 @@ class Builder:
         self._network = self.get_trainer().try_load_model_from_checkpoint()
 
         # Only load from BERT pretrained when no checkpoint is available
-        if self._network is not None:
+        if self._network is None:
             self._logger.info(
                 "No checkpoint models found.. Loading pretrained BERT {}".format(self._bert_model_name))
             self._network = BertModel(self._bert_model_name, self.get_label_mapper().num_classes,
