@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.                             *
 # *****************************************************************************
 import datetime
+import glob
 import logging
 import os
 
@@ -37,14 +38,14 @@ class Train:
         self.device = device or ('cuda:0' if torch.cuda.is_available() else 'cpu')
 
     @property
-    def logger(self):
+    def _logger(self):
         return logging.getLogger(__name__)
 
     def snapshot(self, model, model_dir, prefix="best_snaphsot"):
         snapshot_prefix = os.path.join(model_dir, prefix)
         snapshot_path = snapshot_prefix + 'model.pt'
 
-        self.logger.info("Snapshot model to {}".format(snapshot_path))
+        self._logger.info("Snapshot model to {}".format(snapshot_path))
 
         torch.save(model, snapshot_path)
 
@@ -76,14 +77,14 @@ class Train:
             actual_train = []
             predicted_train = []
 
-            self.logger.debug("Running epoch {}".format(self.epochs))
+            self._logger.debug("Running epoch {}".format(self.epochs))
 
             for idx, batch in enumerate(train_iter):
-                self.logger.debug("Running batch {}".format(idx))
+                self._logger.debug("Running batch {}".format(idx))
                 batch_x = batch[0].to(device=self.device)
                 batch_y = batch[1].to(device=self.device)
 
-                self.logger.debug("batch x shape is {}".format(batch_x.shape))
+                self._logger.debug("batch x shape is {}".format(batch_x.shape))
 
                 iterations += 1
 
@@ -93,11 +94,11 @@ class Train:
 
                 # Step 3. Run the forward pass
                 # words
-                self.logger.debug("Running forward")
+                self._logger.debug("Running forward")
                 predicted = model_network(batch_x)[0]
 
                 # Step 4. Compute loss
-                self.logger.debug("Running loss")
+                self._logger.debug("Running loss")
                 loss = loss_function(predicted, batch_y) / self.accumulation_steps
                 loss.backward()
 
@@ -107,26 +108,26 @@ class Train:
 
                 # Step 5. Only update weights after weights are accumulated for n steps
                 if (idx + 1) % self.accumulation_steps == 0:
-                    self.logger.debug("Running optimiser")
+                    self._logger.debug("Running optimiser")
                     optimizer.step()
                     model_network.zero_grad()
 
             # Print training set results
-            self.logger.info("Train set result details:")
+            self._logger.info("Train set result details:")
             train_loss = sum(losses_train) / len(losses_train)
             train_score = accuracy_score(actual_train, predicted_train)
-            self.logger.info("Train set result details: {}".format(train_score))
+            self._logger.info("Train set result details: {}".format(train_score))
 
             # Print validation set results
-            self.logger.info("Validation set result details:")
+            self._logger.info("Validation set result details:")
             val_actuals, val_predicted, val_loss = self.validate(loss_function, model_network, validation_iter)
             val_score = accuracy_score(val_actuals, val_predicted)
-            self.logger.info("Validation set result details: {} ".format(val_score))
+            self._logger.info("Validation set result details: {} ".format(val_score))
 
             # Snapshot best score
             if best_score is None or val_score > best_score:
                 best_results = (val_score, val_actuals, val_predicted)
-                self.logger.info(
+                self._logger.info(
                     "Snapshotting because the current score {} is greater than {} ".format(val_score, best_score))
                 self.snapshot(model_network, model_dir=model_dir)
                 best_score = val_score
@@ -139,11 +140,11 @@ class Train:
                 self.create_checkpoint(model_network, self.checkpoint_dir)
 
             # evaluate performance on validation set periodically
-            self.logger.info(val_log_template.format((datetime.datetime.now() - start).seconds,
-                                                     epoch, iterations, 1 + len(batch_x), len(train_iter),
-                                                     100. * (1 + len(batch_x)) / len(train_iter), train_loss,
-                                                     val_loss, train_score,
-                                                     val_score))
+            self._logger.info(val_log_template.format((datetime.datetime.now() - start).seconds,
+                                                      epoch, iterations, 1 + len(batch_x), len(train_iter),
+                                                      100. * (1 + len(batch_x)) / len(train_iter), train_loss,
+                                                      val_loss, train_score,
+                                                      val_score))
 
             print("###score: train_loss### {}".format(train_loss))
             print("###score: val_loss### {}".format(val_loss))
@@ -151,7 +152,7 @@ class Train:
             print("###score: val_score### {}".format(val_score))
 
             if no_improvement_epochs > self.early_stopping_patience:
-                self.logger.info("Early stopping.. with no improvement in {}".format(no_improvement_epochs))
+                self._logger.info("Early stopping.. with no improvement in {}".format(no_improvement_epochs))
                 break
 
         return best_results
@@ -188,7 +189,20 @@ class Train:
     def create_checkpoint(self, model, checkpoint_dir):
         checkpoint_path = os.path.join(checkpoint_dir, 'checkpoint.pt')
 
-        self.logger.info("Checkpoint model to {}".format(checkpoint_path))
+        self._logger.info("Checkpoint model to {}".format(checkpoint_path))
         # save model, delete previous 'best_snapshot' files
 
         torch.save(model, checkpoint_path)
+
+    def try_load_model_from_checkpoint(self):
+        is_loaded_from_checkpoint = False
+
+        if self.checkpoint_dir is not None:
+            model_files = list(glob.glob("{}/*.pt".format(self.checkpoint_dir)))
+            if len(model_files) > 0:
+                model_file = model_files[0]
+                self._logger.info(
+                    "Loading checkpoint {} , found {} checkpoint files".format(model_file, len(model_files)))
+                self._network = torch.load(model_file)
+                is_loaded_from_checkpoint = True
+        return is_loaded_from_checkpoint
