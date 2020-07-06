@@ -20,9 +20,8 @@ class PreprocessorBertTokeniser:
     Text to an array of indices using the BERT tokeniser
     """
 
-    def __init__(self, max_feature_len, tokeniser, case_sensitive=True):
+    def __init__(self, max_feature_len, tokeniser):
         self.max_feature_len = max_feature_len
-        self.case_insensitive = not case_sensitive
         self.tokeniser = tokeniser
         self.item = None
 
