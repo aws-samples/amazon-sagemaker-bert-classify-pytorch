@@ -12,9 +12,40 @@
 #  express or implied. See the License for the specific language governing    *
 #  permissions and limitations under the License.                             *
 # *****************************************************************************
+import torch
+
+"""
+This is the sagemaker inference entry script
+"""
+CSV_CONTENT_TYPE = 'application/csv'
+
 def model_fn(model_dir):
-    pass
+    model = torch.load(model_dir)
+    device = get_device()
+    model.to(device=device)
+    return model, tokensier
 
 
-def input_fn(input, conent_type):
-    pass
+def get_device():
+    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+    return device
+
+
+def input_fn(input, content_type):
+    tensor = data
+    if content_type == CSV_CONTENT_TYPE:
+        tensor()
+    else:
+        raise ValueError(
+            "Content type {} not supported. The supported type is {}".format(content_type, CSV_CONTENT_TYPE))
+    return input
+
+
+def predict_fn(input, model):
+    device = get_device()
+    input = input.to(device=device)
+    return model(input)
+
+
+def output_fn(output, content_type):
+    return output
