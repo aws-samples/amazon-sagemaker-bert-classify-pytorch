@@ -12,8 +12,11 @@
 #  express or implied. See the License for the specific language governing    *
 #  permissions and limitations under the License.                             *
 # *****************************************************************************
+import glob
+import logging
 import os
 
+import torch
 from torch import nn
 from torch.optim import Adam
 from torch.utils.data import DataLoader
@@ -68,11 +71,28 @@ class Builder:
         return preprocessor
 
     def get_network(self):
-        if self._network is None:
+        # If checkpoint file is available, load from checkpoint
+        is_loaded_from_checkpoint = self._try_load_model_from_checkpoint()
+
+        # Only load from BERT pretrained when no checkpoint is available
+        if not is_loaded_from_checkpoint and self._network is None:
             self._network = BertModel(self._bert_model_name, self.get_label_mapper().num_classes,
                                       fine_tune=self.fine_tune)
 
         return self._network
+
+    def _try_load_model_from_checkpoint(self):
+        is_loaded_from_checkpoint = False
+
+        if self.checkpoint_dir is not None:
+            model_files = list(glob.glob("{}/*.pt".format(self.checkpoint_dir)))
+            if len(model_files) > 0:
+                model_file = model_files[0]
+                self._logger.info(
+                    "Loading checkpoint {} , found {} checkpoint files".format(model_file, len(model_files)))
+                self._network = torch.load(model_file)
+                is_loaded_from_checkpoint = True
+        return is_loaded_from_checkpoint
 
     def get_train_dataset(self):
         if self._train_dataset is None:
@@ -124,3 +144,7 @@ class Builder:
                                   accumulation_steps=self.grad_accumulation_steps)
 
         return self._trainer
+
+    @property
+    def _logger(self):
+        return logging.getLogger(__name__)
