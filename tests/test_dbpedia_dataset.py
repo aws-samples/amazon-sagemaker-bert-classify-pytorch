@@ -23,7 +23,7 @@ class TestDbpediaDataset(TestCase):
         file = os.path.join(os.path.dirname(__file__), "sample_dbpedia.csv")
         sut = DbpediaDataset(file)
         expected_y = 1
-        expected_x = " Supinfocom (école SUPérieure d'INFOrmatique de COMmunication roughly University of Communication Science) is a computer graphics university with campuses in Valenciennes Arles (France) and Pune (India).Founded in 1988 in Valenciennes the school offers a five-year course leading to a diploma of digital direction (certified Level I)."
+        expected_x = " This is  a sample abstract for my sample title 2 - example 1"
 
         # Act
         actual_x, actual_y = sut.__getitem__(0)
