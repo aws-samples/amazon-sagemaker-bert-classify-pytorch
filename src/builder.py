@@ -69,6 +69,7 @@ class Builder:
         return preprocessor
 
     def get_network(self):
+        # If network already loaded simply return
         if self._network is not None: return self._network
 
         # If checkpoint file is available, load from checkpoint
@@ -80,6 +81,8 @@ class Builder:
                 "No checkpoint models found.. Loading pretrained BERT {}".format(self._bert_model_name))
             self._network = BertModel(self._bert_model_name, self.get_label_mapper().num_classes,
                                       fine_tune=self.fine_tune)
+
+        return self._network
 
     def get_train_dataset(self):
         if self._train_dataset is None:
