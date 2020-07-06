@@ -14,16 +14,20 @@
 # *****************************************************************************
 import torch
 
+from dbpedia_dataset_label_mapper import DbpediaLabelMapper
+from preprocessor_bert_tokeniser import PreprocessorBertTokeniser
+
 """
 This is the sagemaker inference entry script
 """
 CSV_CONTENT_TYPE = 'application/csv'
 
+
 def model_fn(model_dir):
     model = torch.load(model_dir)
     device = get_device()
     model.to(device=device)
-    return model, tokensier
+    return model
 
 
 def get_device():
@@ -32,20 +36,35 @@ def get_device():
 
 
 def input_fn(input, content_type):
-    tensor = data
     if content_type == CSV_CONTENT_TYPE:
-        tensor()
+        records = input.split("\n")
+        return records
     else:
         raise ValueError(
             "Content type {} not supported. The supported type is {}".format(content_type, CSV_CONTENT_TYPE))
-    return input
+
+
+def preprocess(input):
+    tokeniser = None
+    p = PreprocessorBertTokeniser(max_feature_len=512, tokeniser=tokeniser)
+    result = [p(i) for i in input]
+    return result
 
 
 def predict_fn(input, model):
+    # TODO: convert to tensor
+    input_tensor = preprocess(input)
     device = get_device()
-    input = input.to(device=device)
-    return model(input)
+    input_tensor = input_tensor.to(device=device)
+    return model(input_tensor)
 
 
 def output_fn(output, content_type):
+    classes_file = None
+    prob, class_indices = torch.max(output, dim=1)
+    label_mapper = DbpediaLabelMapper(classes_file=classes_file)
+    classes = [label_mapper.reverse_map(i) for i in class_indices]
+    formatted_result = []
+    for c, p in zip(classes, prob):
+        formatted_result.append((c, p))
     return output
