@@ -1,4 +1,5 @@
 import csv
+import logging
 
 from torch.utils.data import Dataset
 
@@ -8,6 +9,10 @@ class DbpediaDataset(Dataset):
     Dbpedia  dataset
     """
 
+    @property
+    def logger(self):
+        return logging.getLogger(__name__)
+
     def __init__(self, file: str, preprocessor=None):
         self.preprocessor = preprocessor
         self._file = file
@@ -16,6 +21,8 @@ class DbpediaDataset(Dataset):
             reader = csv.reader(f, delimiter=',', quotechar='"')
 
             self._items = [(r[2], int(r[0])) for r in reader]
+
+        self.logger.info("Loaded {} records from the dataset".format(len(self)))
 
     def __len__(self):
         return len(self._items)
