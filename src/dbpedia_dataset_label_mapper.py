@@ -16,7 +16,7 @@ class DbpediaLabelMapper:
 
     def __init__(self, classes_file):
         with open(classes_file, "r") as f:
-            self._raw_labels = f.readlines()
+            self._raw_labels = [l.strip("\n") for l in f.readlines()]
 
         self._map = {v: i for i, v in enumerate(self._raw_labels)}
 
