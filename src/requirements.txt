@@ -1,3 +1,2 @@
-jupyter==1.0.0
 torch==1.4.0
 transformers==2.3.0
