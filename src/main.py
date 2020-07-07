@@ -79,11 +79,13 @@ def main():
 
     # Persist mapper so it case be used in inference
     label_mapper_pickle_file = os.path.join(args.modeldir, "label_mapper.pkl")
-    pickle.dump(b.get_label_mapper(), label_mapper_pickle_file)
+    with open(label_mapper_pickle_file, "wb") as f:
+        pickle.dump(b.get_label_mapper(), f)
 
     # Persist tokensier
     preprocessor_pickle_file = os.path.join(args.modeldir, "preprocessor.pkl")
-    pickle.dump(b.get_preprocessor(), preprocessor_pickle_file)
+    with open(preprocessor_pickle_file, "wb") as f:
+        pickle.dump(b.get_preprocessor(), f)
 
     # Run training
     train_dataloader, val_dataloader = b.get_train_val_dataloader()

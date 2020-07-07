@@ -39,11 +39,13 @@ def model_fn(model_dir):
 
     # Load label mapper
     label_mapper_pickle_file = os.path.join("label_mapper.pkl")
-    label_mapper = pickle.load(label_mapper_pickle_file)
+    with open(label_mapper_pickle_file, "rb") as f:
+        label_mapper = pickle.load(f)
 
     # Load preprocessor
     preprocessor_pickle_file = os.path.join("preprocessor.pkl")
-    preprocessor_mapper = pickle.load(preprocessor_pickle_file)
+    with open(preprocessor_pickle_file, "rb") as f:
+        preprocessor_mapper = pickle.load(f)
 
     return preprocessor_mapper, model, label_mapper
 
