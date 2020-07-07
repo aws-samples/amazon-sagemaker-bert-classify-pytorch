@@ -15,6 +15,7 @@
 import argparse
 import logging
 import os
+import pickle
 import sys
 
 from builder import Builder
@@ -72,16 +73,25 @@ def main():
     b = Builder(train_data=train_data_file, val_data=val_data_file, labels_file=classes_file,
                 checkpoint_dir=args.checkpointdir, epochs=args.epochs,
                 early_stopping_patience=args.earlystoppingpatience, batch_size=args.batch, max_seq_len=args.maxseqlen,
-                learning_rate=args.lr, fine_tune=args.finetune)
+                learning_rate=args.lr, fine_tune=args.finetune, model_dir=args.modeldir)
 
     trainer = b.get_trainer()
 
+    # Persist mapper so it case be used in inference
+    label_mapper_pickle_file = os.path.join(args.modeldir, "label_mapper.pkl")
+    pickle.dump(b.get_label_mapper(), label_mapper_pickle_file)
+
+    # Persist tokensier
+    preprocessor_pickle_file = os.path.join(args.modeldir, "preprocessor.pkl")
+    pickle.dump(b.get_preprocessor(), preprocessor_pickle_file)
+
+    # Run training
     train_dataloader, val_dataloader = b.get_train_val_dataloader()
     trainer.run_train(train_iter=train_dataloader,
                       validation_iter=val_dataloader,
                       model_network=b.get_network(),
                       loss_function=b.get_loss_function(),
-                      optimizer=b.get_optimiser(), model_dir=args.modeldir, pos_label=b.get_pos_label_index())
+                      optimizer=b.get_optimiser(), pos_label=b.get_pos_label_index())
 
 
 if "__main__" == __name__:

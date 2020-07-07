@@ -27,8 +27,10 @@ class Train:
     Trains on a single GPU / CPU
     """
 
-    def __init__(self, device=None, epochs=10, early_stopping_patience=20, checkpoint_frequency=1, checkpoint_dir=None,
+    def __init__(self, model_dir, device=None, epochs=10, early_stopping_patience=20, checkpoint_frequency=1,
+                 checkpoint_dir=None,
                  accumulation_steps=1):
+        self.model_dir = model_dir
         self.accumulation_steps = accumulation_steps
         self.checkpoint_dir = checkpoint_dir
         self.checkpoint_frequency = checkpoint_frequency
@@ -49,11 +51,10 @@ class Train:
 
         torch.save(model, snapshot_path)
 
-    def run_train(self, train_iter, validation_iter, model_network, loss_function, optimizer, model_dir, pos_label):
+    def run_train(self, train_iter, validation_iter, model_network, loss_function, optimizer, pos_label):
         """
     Runs train...
         :param pos_label:
-        :param model_dir:
         :param validation_iter: Validation set
         :param train_iter: Train Data 
         :param model_network: A neural network
@@ -129,7 +130,7 @@ class Train:
                 best_results = (val_score, val_actuals, val_predicted)
                 self._logger.info(
                     "Snapshotting because the current score {} is greater than {} ".format(val_score, best_score))
-                self.snapshot(model_network, model_dir=model_dir)
+                self.snapshot(model_network, model_dir=self.model_dir)
                 best_score = val_score
                 no_improvement_epochs = 0
             else:

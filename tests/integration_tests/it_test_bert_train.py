@@ -47,7 +47,7 @@ class ItTestBertTrain(TestCase):
         train_data_file = os.path.join(os.path.dirname(__file__), "..", "sample_dbpedia.csv")
         val_data_file = os.path.join(os.path.dirname(__file__), "..", "sample_dbpedia.csv")
         labels_file = os.path.join(os.path.dirname(__file__), "..", "classes.txt")
-        b = Builder(train_data=train_data_file, val_data=val_data_file, labels_file=labels_file,
+        b = Builder(train_data=train_data_file, val_data=val_data_file, labels_file=labels_file, model_dir=modeldir,
                     checkpoint_dir=checkpoint_dir, epochs=epochs,
                     early_stopping_patience=earlystoppingpatience, batch_size=batch_size,
                     grad_accumulation_steps=grad_acc_steps, learning_rate=lr)
@@ -61,4 +61,4 @@ class ItTestBertTrain(TestCase):
                           validation_iter=val_dataloader,
                           optimizer=b.get_optimiser(),
                           model_network=b.get_network(),
-                          loss_function=b.get_loss_function(), model_dir=modeldir, pos_label=0)
+                          loss_function=b.get_loss_function(), pos_label=0)

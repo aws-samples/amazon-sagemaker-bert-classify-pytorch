@@ -28,7 +28,9 @@ class TestBertTrain(TestCase):
         Test case  run train without exception
         :return:
         """
-        sut = Train(epochs=1)
+        tmp_dir = tempfile.mkdtemp()
+
+        sut = Train(model_dir=tmp_dir, epochs=1)
         batch_size = 10
         sequence_len = 20
         vocab_size = 5
@@ -45,8 +47,6 @@ class TestBertTrain(TestCase):
         # Mock optimiser
         mock_optmiser = MagicMock()
 
-        tmp_dir = tempfile.mkdtemp()
-
         train = [self._generate_random_train_batch(batch_size, num_classes, sequence_len, vocab_size) for _ in
                  range(10)]
         val = [self._generate_random_train_batch(batch_size, num_classes, sequence_len, vocab_size) for _ in range(10)]
@@ -56,7 +56,7 @@ class TestBertTrain(TestCase):
         sut.create_checkpoint = MagicMock()
 
         # Act
-        actual = sut.run_train(train, val, loss_function=mock_loss, model_network=mock_network, model_dir=tmp_dir,
+        actual = sut.run_train(train, val, loss_function=mock_loss, model_network=mock_network,
                                optimizer=mock_optmiser, pos_label=0)
 
         # Assert

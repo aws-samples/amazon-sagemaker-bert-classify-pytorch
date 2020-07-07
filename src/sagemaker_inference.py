@@ -12,10 +12,11 @@
 #  express or implied. See the License for the specific language governing    *
 #  permissions and limitations under the License.                             *
 # *****************************************************************************
-import torch
+import glob
+import os
+import pickle
 
-from dbpedia_dataset_label_mapper import DbpediaLabelMapper
-from preprocessor_bert_tokeniser import PreprocessorBertTokeniser
+import torch
 
 """
 This is the sagemaker inference entry script
@@ -24,10 +25,27 @@ CSV_CONTENT_TYPE = 'application/csv'
 
 
 def model_fn(model_dir):
-    model = torch.load(model_dir)
+    # Load model
+    model_files = list(glob.glob("{}/*.pt".format(model_dir)))
+    error_msg = "Expected exactly 1 model file (match pattern *.pt)in dir {}, but instead found {} files. Found.. {}".format(
+        model_dir, len(model_files), ",".join(model_files))
+    assert len(model_files) == 1, error_msg
+
+    model_file = model_files[0]
+    model = torch.load(model_file)
+
     device = get_device()
     model.to(device=device)
-    return model
+
+    # Load label mapper
+    label_mapper_pickle_file = os.path.join("label_mapper.pkl")
+    label_mapper = pickle.load(label_mapper_pickle_file)
+
+    # Load preprocessor
+    preprocessor_pickle_file = os.path.join("preprocessor.pkl")
+    preprocessor_mapper = pickle.load(preprocessor_pickle_file)
+
+    return preprocessor_mapper, model, label_mapper
 
 
 def get_device():
@@ -44,27 +62,38 @@ def input_fn(input, content_type):
             "Content type {} not supported. The supported type is {}".format(content_type, CSV_CONTENT_TYPE))
 
 
-def preprocess(input):
-    tokeniser = None
-    p = PreprocessorBertTokeniser(max_feature_len=512, tokeniser=tokeniser)
-    result = [p(i) for i in input]
+def preprocess(input, preprocessor):
+    result = [preprocessor(i) for i in input]
     return result
 
 
-def predict_fn(input, model):
-    # TODO: convert to tensor
-    input_tensor = preprocess(input)
+def predict_fn(input, model_artifacts):
+    preprocessor, model, label_mapper = model_artifacts
+
+    # Preprocess
+    input_tensor = preprocess(input, preprocessor)
+    # Copy input to gpu if available
     device = get_device()
     input_tensor = input_tensor.to(device=device)
-    return model(input_tensor)
 
+    # Invoke
+    output_tensor = model(input_tensor)
 
-def output_fn(output, content_type):
-    classes_file = None
-    prob, class_indices = torch.max(output, dim=1)
-    label_mapper = DbpediaLabelMapper(classes_file=classes_file)
+    # Return the class with the highest prob and the corresponding prob
+    prob, class_indices = torch.max(output_tensor, dim=1)
     classes = [label_mapper.reverse_map(i) for i in class_indices]
-    formatted_result = []
+    result = []
     for c, p in zip(classes, prob):
-        formatted_result.append((c, p))
-    return output
+        result.append({c: p})
+
+    return result
+
+
+def output_fn(output, accept=CSV_CONTENT_TYPE):
+    if accept == CSV_CONTENT_TYPE:
+        csv_records = ["{},{}".format(row.key, row.value) for row in output]
+        prediction = "\n".join(csv_records)
+        return prediction, accept
+    else:
+        raise ValueError(
+            "Content type {} not supported. The only types supprted are {}".format(accept, CSV_CONTENT_TYPE))

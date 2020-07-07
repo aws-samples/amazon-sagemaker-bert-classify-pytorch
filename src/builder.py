@@ -29,9 +29,10 @@ from preprocessor_bert_tokeniser import PreprocessorBertTokeniser
 
 class Builder:
 
-    def __init__(self, train_data, val_data, labels_file, num_workers=None, checkpoint_dir=None, epochs=10,
+    def __init__(self, train_data, val_data, labels_file, model_dir, num_workers=None, checkpoint_dir=None, epochs=10,
                  early_stopping_patience=10, checkpoint_frequency=1, grad_accumulation_steps=1, batch_size=10,
                  max_seq_len=10, learning_rate=0.0001, fine_tune=True):
+        self.model_dir = model_dir
         self.fine_tune = fine_tune
         self.learning_rate = learning_rate
         self.checkpoint_frequency = checkpoint_frequency
@@ -128,7 +129,8 @@ class Builder:
 
     def get_trainer(self):
         if self._trainer is None:
-            self._trainer = Train(epochs=self.epochs, early_stopping_patience=self.early_stopping_patience,
+            self._trainer = Train(model_dir=self.model_dir, epochs=self.epochs,
+                                  early_stopping_patience=self.early_stopping_patience,
                                   checkpoint_frequency=self.checkpoint_frequency,
                                   checkpoint_dir=self.checkpoint_dir,
                                   accumulation_steps=self.grad_accumulation_steps)
