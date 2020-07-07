@@ -73,7 +73,7 @@ def preprocess(input, preprocessor):
 def predict_fn(input, model_artifacts):
     preprocessor, model, label_mapper = model_artifacts
 
-    # Preprocess
+    # Pre-process
     input_tensor = preprocess(input, preprocessor)
 
     # Copy input to gpu if available
@@ -84,7 +84,7 @@ def predict_fn(input, model_artifacts):
     model.eval()
     with torch.no_grad():
         output_tensor = model(input_tensor)[0]
-        # Convert to probablties
+        # Convert to probabilities
         softmax = torch.nn.Softmax()
         output_tensor = softmax(output_tensor)
 
@@ -104,4 +104,4 @@ def output_fn(output, accept=JSON_CONTENT_TYPE):
         return prediction, accept
     else:
         raise ValueError(
-            "Content type {} not supported. The only types supprted are {}".format(accept, JSON_CONTENT_TYPE))
+            "Content type {} not supported. The only types supported are {}".format(accept, JSON_CONTENT_TYPE))
