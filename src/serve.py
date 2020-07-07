@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.                             *
 # *****************************************************************************
 import glob
+import json
 import os
 import pickle
 
@@ -21,7 +22,8 @@ import torch
 """
 This is the sagemaker inference entry script
 """
-CSV_CONTENT_TYPE = 'application/csv'
+CSV_CONTENT_TYPE = 'text/csv'
+JSON_CONTENT_TYPE = 'text/json'
 
 
 def model_fn(model_dir):
@@ -36,12 +38,12 @@ def model_fn(model_dir):
     model = torch.load(model_file, map_location=torch.device(device))
 
     # Load label mapper
-    label_mapper_pickle_file = os.path.join("label_mapper.pkl")
+    label_mapper_pickle_file = os.path.join(model_dir, "label_mapper.pkl")
     with open(label_mapper_pickle_file, "rb") as f:
         label_mapper = pickle.load(f)
 
     # Load preprocessor
-    preprocessor_pickle_file = os.path.join("preprocessor.pkl")
+    preprocessor_pickle_file = os.path.join(model_dir, "preprocessor.pkl")
     with open(preprocessor_pickle_file, "rb") as f:
         preprocessor_mapper = pickle.load(f)
 
@@ -54,8 +56,6 @@ def get_device():
 
 
 def input_fn(input, content_type):
-    input = input.decode("utf-8")
-
     if content_type == CSV_CONTENT_TYPE:
         records = input.split("\n")
         return records
@@ -65,7 +65,7 @@ def input_fn(input, content_type):
 
 
 def preprocess(input, preprocessor):
-    result = [preprocessor(i) for i in input]
+    result = [preprocessor(i).unsqueeze(dim=0) for i in input]
     result = torch.cat(result)
     return result
 
@@ -81,23 +81,27 @@ def predict_fn(input, model_artifacts):
     input_tensor = input_tensor.to(device=device)
 
     # Invoke
-    output_tensor = model(input_tensor)
+    model.eval()
+    with torch.no_grad():
+        output_tensor = model(input_tensor)[0]
+        # Convert to probablties
+        softmax = torch.nn.Softmax()
+        output_tensor = softmax(output_tensor)
 
     # Return the class with the highest prob and the corresponding prob
     prob, class_indices = torch.max(output_tensor, dim=1)
-    classes = [label_mapper.reverse_map(i) for i in class_indices]
+    classes = [label_mapper.reverse_map(i.item()) for i in class_indices]
     result = []
     for c, p in zip(classes, prob):
-        result.append({c: p})
+        result.append({c: p.item()})
 
     return result
 
 
-def output_fn(output, accept=CSV_CONTENT_TYPE):
-    if accept == CSV_CONTENT_TYPE:
-        csv_records = ["{},{}".format(row.key, row.value) for row in output]
-        prediction = "\n".join(csv_records)
+def output_fn(output, accept=JSON_CONTENT_TYPE):
+    if accept == JSON_CONTENT_TYPE:
+        prediction = json.dumps(output)
         return prediction, accept
     else:
         raise ValueError(
-            "Content type {} not supported. The only types supprted are {}".format(accept, CSV_CONTENT_TYPE))
+            "Content type {} not supported. The only types supprted are {}".format(accept, JSON_CONTENT_TYPE))
