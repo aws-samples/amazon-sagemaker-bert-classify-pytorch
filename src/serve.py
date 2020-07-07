@@ -55,6 +55,8 @@ def get_device():
 
 
 def input_fn(input, content_type):
+    input = input.decode("utf-8")
+
     if content_type == CSV_CONTENT_TYPE:
         records = input.split("\n")
         return records
