@@ -35,7 +35,6 @@ def model_fn(model_dir):
     device = get_device()
     model = torch.load(model_file, map_location=torch.device(device))
 
-
     # Load label mapper
     label_mapper_pickle_file = os.path.join("label_mapper.pkl")
     with open(label_mapper_pickle_file, "rb") as f:
@@ -67,6 +66,7 @@ def input_fn(input, content_type):
 
 def preprocess(input, preprocessor):
     result = [preprocessor(i) for i in input]
+    result = torch.cat(result)
     return result
 
 
@@ -75,6 +75,7 @@ def predict_fn(input, model_artifacts):
 
     # Preprocess
     input_tensor = preprocess(input, preprocessor)
+
     # Copy input to gpu if available
     device = get_device()
     input_tensor = input_tensor.to(device=device)
