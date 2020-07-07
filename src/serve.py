@@ -32,10 +32,9 @@ def model_fn(model_dir):
     assert len(model_files) == 1, error_msg
 
     model_file = model_files[0]
-    model = torch.load(model_file)
-
     device = get_device()
-    model.to(device=device)
+    model = torch.load(model_file, map_location=torch.device(device))
+
 
     # Load label mapper
     label_mapper_pickle_file = os.path.join("label_mapper.pkl")
