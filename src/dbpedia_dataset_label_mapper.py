@@ -14,7 +14,10 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE        *
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                                *
 # ***************************************************************************************
-class DbpediaLabelMapper:
+from label_mapper_base import LabelMapperBase
+
+
+class DbpediaLabelMapper(LabelMapperBase):
 
     def __init__(self, classes_file):
         with open(classes_file, "r") as f:
