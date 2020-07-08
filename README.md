@@ -4,7 +4,7 @@
  
  - Train [BERT](https://www.aclweb.org/anthology/N19-1423/), using [huggingface](https://huggingface.co/transformers/pretrained_models.html) on [Amazon Sagemaker](https://docs.aws.amazon.com/sagemaker/latest/dg/pytorch.html) using [Spot instances](https://docs.aws.amazon.com/sagemaker/latest/dg/model-managed-spot-training.html). Spot instances allow you to lower training costs.
  - Implement [Sagemaker checkpointing](https://docs.aws.amazon.com/sagemaker/latest/dg/model-checkpoints.html) , so when a spot instance terimnates, you can resume training from the checkpoint
- - [Deploy](https://docs.aws.amazon.com/sagemaker/latest/dg/deploy-model.html) the BERT for inference. 
+ - [Deploy](https://docs.aws.amazon.com/sagemaker/latest/dg/deploy-model.html) the BERT model for inference. 
   
  To get started, use the notebook [BertTextClassification.ipynb](BertTextClassification.ipynb)
  
