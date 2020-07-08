@@ -33,8 +33,8 @@ from preprocessor_bert_tokeniser import PreprocessorBertTokeniser
 class Builder:
 
     def __init__(self, train_data, val_data, labels_file, model_dir, num_workers=None, checkpoint_dir=None, epochs=10,
-                 early_stopping_patience=10, checkpoint_frequency=1, grad_accumulation_steps=1, batch_size=10,
-                 max_seq_len=10, learning_rate=0.0001, fine_tune=True):
+                 early_stopping_patience=10, checkpoint_frequency=1, grad_accumulation_steps=8, batch_size=8,
+                 max_seq_len=512, learning_rate=0.00001, fine_tune=True):
         self.model_dir = model_dir
         self.fine_tune = fine_tune
         self.learning_rate = learning_rate
@@ -46,26 +46,26 @@ class Builder:
         self.train_data = train_data
         self.val_data = val_data
         self.labels_file = labels_file
+        self.batch_size = batch_size
+        # Note: Since the max seq len for pos embedding is 512 , in the pretrained  bert this must be less than eq to 512
+        # Also note increasing the length greater also will create GPU out of mememory error
+        self._max_seq_len = max_seq_len
+        self.num_workers = num_workers or os.cpu_count() - 1
+        if self.num_workers <= 0:
+            self.num_workers = 0
+
         self._network = None
         self._train_dataloader = None
         self._train_dataset = None
         self._val_dataset = None
         self._val_dataloader = None
-
         self._trainer = None
         self._lossfunc = None
         self._optimiser = None
         self._label_mapper = None
-        self.num_workers = num_workers or os.cpu_count() - 1
-        self.batch_size = batch_size
-        if self.num_workers <= 0:
-            self.num_workers = 0
 
         self._bert_model_name = "bert-base-cased"
         self._token_lower_case = False
-        # Note: Since the max seq len for pos embedding is 512 , in the pretrained  bert this must be less than eq to 512
-        # Also note increasing the length greater also will create GPU out of mememory error
-        self._max_seq_len = max_seq_len
 
     def get_preprocessor(self):
         tokeniser = BertTokenizer.from_pretrained(self._bert_model_name, do_lower_case=self._token_lower_case)

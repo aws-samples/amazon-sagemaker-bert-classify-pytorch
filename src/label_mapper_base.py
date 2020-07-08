@@ -14,33 +14,23 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE        *
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                                *
 # ***************************************************************************************
-from label_mapper_base import LabelMapperBase
 
-
-class DbpediaLabelMapper(LabelMapperBase):
-
-    def __init__(self, classes_file):
-        with open(classes_file, "r") as f:
-            self._raw_labels = [l.strip("\n") for l in f.readlines()]
-
-        self._map = {v: i for i, v in enumerate(self._raw_labels)}
-
-        self._reverse_map = {i: v for i, v in enumerate(self._raw_labels)}
+class LabelMapperBase:
 
     def map(self, item):
-        return self._map[item]
+        raise NotImplementedError
 
     def reverse_map(self, item):
-        return self._reverse_map[item]
+        raise NotImplementedError
 
     @property
     def num_classes(self):
-        return len(self._reverse_map)
+        raise NotImplementedError
 
     @property
     def positive_label(self):
-        return self.reverse_map(0)
+        raise NotImplementedError
 
     @property
     def positive_label_index(self):
-        return self.map(self.positive_label)
+        raise NotImplementedError
