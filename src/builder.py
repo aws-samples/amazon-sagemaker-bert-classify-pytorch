@@ -33,8 +33,8 @@ from preprocessor_bert_tokeniser import PreprocessorBertTokeniser
 class Builder:
 
     def __init__(self, train_data, val_data, labels_file, model_dir, num_workers=None, checkpoint_dir=None, epochs=10,
-                 early_stopping_patience=10, checkpoint_frequency=1, grad_accumulation_steps=1, batch_size=10,
-                 max_seq_len=10, learning_rate=0.0001, fine_tune=True):
+                 early_stopping_patience=10, checkpoint_frequency=1, grad_accumulation_steps=8, batch_size=8,
+                 max_seq_len=512, learning_rate=0.00001, fine_tune=True):
         self.model_dir = model_dir
         self.fine_tune = fine_tune
         self.learning_rate = learning_rate
