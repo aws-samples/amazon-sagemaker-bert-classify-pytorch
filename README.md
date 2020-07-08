@@ -1,6 +1,6 @@
 # Sagemaker BERT text classification using PyTorch
  
- This sample show you how to train and deploy BERT on Sagemaker. This uses a text classifiation example using the [Dbpedia ontology dataset](https://wiki.dbpedia.org/services-resources/dbpedia-data-set-2014#2)
+ This sample show you how to train BERT on Sagemaker using SPOT instances and deploy the model for inference. This uses a text classifiation example using the [Dbpedia ontology dataset](https://wiki.dbpedia.org/services-resources/dbpedia-data-set-2014#2)
  
  To get started, use the notebook [BertTextClassification.ipynb](BertTextClassification.ipynb)
  
