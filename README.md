@@ -5,13 +5,11 @@
  - Train [BERT](https://www.aclweb.org/anthology/N19-1423/), using [huggingface](https://huggingface.co/transformers/pretrained_models.html) on [Amazon Sagemaker](https://docs.aws.amazon.com/sagemaker/latest/dg/pytorch.html) using [Spot instances](https://docs.aws.amazon.com/sagemaker/latest/dg/model-managed-spot-training.html). Spot instances allow you to lower training costs.
  - Implement [Sagemaker checkpointing](https://docs.aws.amazon.com/sagemaker/latest/dg/model-checkpoints.html) , so when a spot instance terimnates, you can resume training from the checkpoint
  - [Deploy](https://docs.aws.amazon.com/sagemaker/latest/dg/deploy-model.html) the BERT for inference. 
- 
- This uses a text classifiation example using the [Dbpedia ontology dataset](https://wiki.dbpedia.org/services-resources/dbpedia-data-set-2014#2)
- 
+  
  To get started, use the notebook [BertTextClassification.ipynb](BertTextClassification.ipynb)
  
  ## Dataset
- We use the Dbpedia ontology dataset, for more details, see https://wiki.dbpedia.org/services-resources/dbpedia-data-set-2014#2
+ We use the [Dbpedia ontology dataset](https://wiki.dbpedia.org/services-resources/dbpedia-data-set-2014#2), for more details, see https://wiki.dbpedia.org/services-resources/dbpedia-data-set-2014#2
  
  ### Customise for your dataset
  In order to customise this sample, for your own dataset, perform the following steps
