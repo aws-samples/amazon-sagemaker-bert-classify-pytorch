@@ -15,7 +15,7 @@
  In order to customise this sample, for your own dataset, perform the following steps
  
  1. Create a dataset class, that implements the [PyTorch Dataset abstract class](https://pytorch.org/tutorials/beginner/data_loading_tutorial.html), see [dbpedia_dataset.py](src/dbpedia_dataset.py) as an example implementation.
- 2. Create a label mapper class, that implements base class [label_mapper_base.py](src/label_mapper_base.py), to maps string labels to zero indexed integer labels. See an example implementation [dbpedia_dataset_label_mapper.py](src/dbpedia_dataset_label_mapper.py).
+ 2. Create a label mapper class, that implements abstract class [label_mapper_base.py](src/label_mapper_base.py), to maps string labels to zero indexed integer labels. See an example implementation [dbpedia_dataset_label_mapper.py](src/dbpedia_dataset_label_mapper.py).
  3. Replace the use of classes `DbpediaDataset` and `DbpediaLabelMapper` in [builder.py](src/builder.py) with your own custom dataset and label mapper class
  
  ## Security
