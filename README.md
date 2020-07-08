@@ -1,6 +1,12 @@
-# Sagemaker BERT text classification using PyTorch
+# Amazon Sagemaker BERT text classification using PyTorch
  
- This sample show you how to train BERT on Sagemaker using SPOT instances and deploy the model for inference. This uses a text classifiation example using the [Dbpedia ontology dataset](https://wiki.dbpedia.org/services-resources/dbpedia-data-set-2014#2)
+ This sample show you how to 
+ 
+ - Train [BERT](https://www.aclweb.org/anthology/N19-1423/), using [huggingface](https://huggingface.co/transformers/pretrained_models.html) on [Amazon Sagemaker](https://docs.aws.amazon.com/sagemaker/latest/dg/pytorch.html) using **[SPOT instances](https://docs.aws.amazon.com/sagemaker/latest/dg/model-managed-spot-training.html)**
+ - This samples also implements **[Sagemaker checkpointing](https://docs.aws.amazon.com/sagemaker/latest/dg/model-checkpoints.html)** , so when a spot instance terimnates, you can resume training from the checkpoint
+ - **[Deploy](https://docs.aws.amazon.com/sagemaker/latest/dg/deploy-model.html)** the BERT for inference. 
+ 
+ This uses a text classifiation example using the [Dbpedia ontology dataset](https://wiki.dbpedia.org/services-resources/dbpedia-data-set-2014#2)
  
  To get started, use the notebook [BertTextClassification.ipynb](BertTextClassification.ipynb)
  
