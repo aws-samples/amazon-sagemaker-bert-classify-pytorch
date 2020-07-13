@@ -109,7 +109,7 @@ class Train:
                 actual_train.extend(batch_y.cpu().tolist())
                 predicted_train.extend(torch.max(predicted, 1)[1].view(-1).cpu().tolist())
 
-                # Step 5. Only update weights after weights are accumulated for n steps
+                # Step 5. Only update weights after gradients are accumulated for n steps
                 if (idx + 1) % self.accumulation_steps == 0:
                     self._logger.debug("Running optimiser")
                     optimizer.step()
@@ -193,7 +193,6 @@ class Train:
         checkpoint_path = os.path.join(checkpoint_dir, 'checkpoint.pt')
 
         self._logger.info("Checkpoint model to {}".format(checkpoint_path))
-        # save model, delete previous 'best_snapshot' files
 
         torch.save(model, checkpoint_path)
 
