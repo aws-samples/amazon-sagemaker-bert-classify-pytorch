@@ -20,13 +20,14 @@ import logging
 import os
 
 import torch
+import torch.nn as nn
 import torch.utils.data
 from sklearn.metrics import accuracy_score
 
 
 class Train:
     """
-    Trains on a single GPU / CPU
+    Trains on GPU / CPU
     """
 
     def __init__(self, model_dir, device=None, epochs=10, early_stopping_patience=20, checkpoint_frequency=1,
@@ -39,7 +40,18 @@ class Train:
         self.early_stopping_patience = early_stopping_patience
         self.epochs = epochs
         self.snapshotter = None
-        self.device = device or ('cuda:0' if torch.cuda.is_available() else 'cpu')
+
+        # Set up device is not set
+        available_device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        if torch.cuda.device_count() > 1:
+            available_device = [f"cuda:{i}" for i in range(torch.cuda.device_count())]
+
+        self.device = device or available_device
+
+        # Assume multi gpu if device passed is a list and not a string
+        self._is_multigpu = not isinstance(self.device, str)
+
+        self._default_device = self.device[0] if self._is_multigpu else self.device
 
     @property
     def _logger(self):
@@ -51,6 +63,10 @@ class Train:
 
         self._logger.info("Snapshot model to {}".format(snapshot_path))
 
+        # If nn.dataparallel, get the underlying module
+        if isinstance(model, torch.nn.DataParallel):
+            model = model.module
+
         torch.save(model, snapshot_path)
 
     def run_train(self, train_iter, validation_iter, model_network, loss_function, optimizer, pos_label):
@@ -58,7 +74,7 @@ class Train:
     Runs train...
         :param pos_label:
         :param validation_iter: Validation set
-        :param train_iter: Train Data 
+        :param train_iter: Train Data
         :param model_network: A neural network
         :param loss_function: Pytorch loss function
         :param optimizer: Optimiser
@@ -73,7 +89,12 @@ class Train:
         best_score = None
 
         no_improvement_epochs = 0
-        model_network.to(device=self.device)
+
+        if self._is_multigpu:
+            model_network = nn.DataParallel(model_network, device_ids=self.device, output_device=self._default_device)
+            self._logger.info("Using multi gpu with devices {}, default {} ".format(self.device, self._default_device))
+
+        model_network.to(device=self._default_device)
 
         for epoch in range(self.epochs):
             losses_train = []
@@ -84,8 +105,8 @@ class Train:
 
             for idx, batch in enumerate(train_iter):
                 self._logger.debug("Running batch {}".format(idx))
-                batch_x = batch[0].to(device=self.device)
-                batch_y = batch[1].to(device=self.device)
+                batch_x = batch[0].to(device=self._default_device)
+                batch_y = batch[1].to(device=self._default_device)
 
                 self._logger.debug("batch x shape is {}".format(batch_x.shape))
 
@@ -167,14 +188,13 @@ class Train:
         # total loss
         val_loss = 0
 
-        actuals = torch.tensor([], dtype=torch.long).to(device=self.device)
-        predicted = torch.tensor([], dtype=torch.long).to(device=self.device)
+        actuals = torch.tensor([], dtype=torch.long).to(device=self._default_device)
+        predicted = torch.tensor([], dtype=torch.long).to(device=self._default_device)
 
         with torch.no_grad():
-
             for idx, val in enumerate(val_iter):
-                val_batch_idx = val[0].to(device=self.device)
-                val_y = val[1].to(device=self.device)
+                val_batch_idx = val[0].to(device=self._default_device)
+                val_y = val[1].to(device=self._default_device)
 
                 pred_batch_y = model_network(val_batch_idx)[0]
 
@@ -194,15 +214,22 @@ class Train:
 
         self._logger.info("Checkpoint model to {}".format(checkpoint_path))
 
-        torch.save(model, checkpoint_path)
+        # If nn.dataparallel, get the underlying module
+        if isinstance(model, torch.nn.DataParallel):
+            model = model.module
+
+        torch.save({
+            'model_state_dict': model.state_dict(),
+        }, checkpoint_path)
 
     def try_load_model_from_checkpoint(self):
-        model = None
+        loaded_weights = None
         if self.checkpoint_dir is not None:
             model_files = list(glob.glob("{}/*.pt".format(self.checkpoint_dir)))
             if len(model_files) > 0:
                 model_file = model_files[0]
                 self._logger.info(
                     "Loading checkpoint {} , found {} checkpoint files".format(model_file, len(model_files)))
-                model = torch.load(model_file)
-        return model
+                checkpoint = torch.load(model_file)
+                loaded_weights = checkpoint['model_state_dict']
+        return loaded_weights
