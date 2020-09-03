@@ -14,222 +14,132 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE        *
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                                *
 # ***************************************************************************************
-import datetime
-import glob
+
 import logging
 import os
 
-import torch
-import torch.nn as nn
-import torch.utils.data
-from sklearn.metrics import accuracy_score
+from torch import nn
+from torch.optim import Adam
+from torch.utils.data import DataLoader
+from transformers import BertTokenizer
+
+from bert_model import BertModel
+from bert_train import Train
+from dbpedia_dataset import DbpediaDataset
+from dbpedia_dataset_label_mapper import DbpediaLabelMapper
+from preprocessor_bert_tokeniser import PreprocessorBertTokeniser
 
 
-class Train:
-    """
-    Trains on GPU / CPU
-    """
+class Builder:
 
-    def __init__(self, model_dir, device=None, epochs=10, early_stopping_patience=20, checkpoint_frequency=1,
-                 checkpoint_dir=None,
-                 accumulation_steps=1):
+    def __init__(self, train_data, val_data, labels_file, model_dir, num_workers=None, checkpoint_dir=None, epochs=10,
+                 early_stopping_patience=10, checkpoint_frequency=1, grad_accumulation_steps=8, batch_size=8,
+                 max_seq_len=512, learning_rate=0.00001, fine_tune=True):
         self.model_dir = model_dir
-        self.accumulation_steps = accumulation_steps
-        self.checkpoint_dir = checkpoint_dir
+        self.fine_tune = fine_tune
+        self.learning_rate = learning_rate
         self.checkpoint_frequency = checkpoint_frequency
+        self.grad_accumulation_steps = grad_accumulation_steps
         self.early_stopping_patience = early_stopping_patience
         self.epochs = epochs
-        self.snapshotter = None
+        self.checkpoint_dir = checkpoint_dir
+        self.train_data = train_data
+        self.val_data = val_data
+        self.labels_file = labels_file
+        self.batch_size = batch_size
+        # Note: Since the max seq len for pos embedding is 512 , in the pretrained  bert this must be less than eq to 512
+        # Also note increasing the length greater also will create GPU out of mememory error
+        self._max_seq_len = max_seq_len
+        self.num_workers = num_workers or os.cpu_count() - 1
+        if self.num_workers <= 0:
+            self.num_workers = 0
 
-        # Set up device is not set
-        available_device = "cuda:0" if torch.cuda.is_available() else "cpu"
-        if torch.cuda.device_count() > 1:
-            available_device = [f"cuda:{i}" for i in range(torch.cuda.device_count())]
+        self._network = None
+        self._train_dataloader = None
+        self._train_dataset = None
+        self._val_dataset = None
+        self._val_dataloader = None
+        self._trainer = None
+        self._lossfunc = None
+        self._optimiser = None
+        self._label_mapper = None
 
-        self.device = device or available_device
+        self._bert_model_name = "bert-base-cased"
+        self._token_lower_case = False
 
-        # Assume multi gpu if device passed is a list and not a string
-        self._is_multigpu = not isinstance(self.device, str)
+    def get_preprocessor(self):
+        tokeniser = BertTokenizer.from_pretrained(self._bert_model_name, do_lower_case=self._token_lower_case)
+        preprocessor = PreprocessorBertTokeniser(max_feature_len=self._max_seq_len, tokeniser=tokeniser)
+        return preprocessor
 
-        self._default_device = self.device[0] if self._is_multigpu else self.device
+    def get_network(self):
+        # If network already loaded simply return
+        if self._network is not None: return self._network
+
+        # If checkpoint file is available, load from checkpoint
+        self._network = self.get_trainer().try_load_model_from_checkpoint()
+
+        # Only load from BERT pretrained when no checkpoint is available
+        if self._network is None:
+            self._logger.info(
+                "No checkpoint models found.. Loading pretrained BERT {}".format(self._bert_model_name))
+            self._network = BertModel(self._bert_model_name, self.get_label_mapper().num_classes,
+                                      fine_tune=self.fine_tune)
+
+        return self._network
+
+    def get_train_dataset(self):
+        if self._train_dataset is None:
+            self._train_dataset = DbpediaDataset(self.train_data, preprocessor=self.get_preprocessor())
+
+        return self._train_dataset
+
+    def get_val_dataset(self):
+        if self._val_dataset is None:
+            self._val_dataset = DbpediaDataset(self.val_data, preprocessor=self.get_preprocessor())
+
+        return self._val_dataset
+
+    def get_label_mapper(self):
+        if self._label_mapper is None:
+            self._label_mapper = DbpediaLabelMapper(self.labels_file)
+
+        return self._label_mapper
+
+    def get_pos_label_index(self):
+        return self.get_label_mapper().positive_label_index
+
+    def get_train_val_dataloader(self):
+        if self._train_dataloader is None:
+            self._train_dataloader = DataLoader(dataset=self.get_train_dataset(), num_workers=self.num_workers,
+                                                batch_size=self.batch_size, shuffle=True)
+
+        if self._val_dataloader is None:
+            self._val_dataloader = DataLoader(dataset=self.get_val_dataset(), num_workers=self.num_workers,
+                                              batch_size=self.batch_size, shuffle=False)
+
+        return self._train_dataloader, self._val_dataloader
+
+    def get_loss_function(self):
+        if self._lossfunc is None:
+            self._lossfunc = nn.CrossEntropyLoss()
+        return self._lossfunc
+
+    def get_optimiser(self):
+        if self._optimiser is None:
+            self._optimiser = Adam(params=self.get_network().parameters(), lr=self.learning_rate)
+        return self._optimiser
+
+    def get_trainer(self):
+        if self._trainer is None:
+            self._trainer = Train(model_dir=self.model_dir, epochs=self.epochs,
+                                  early_stopping_patience=self.early_stopping_patience,
+                                  checkpoint_frequency=self.checkpoint_frequency,
+                                  checkpoint_dir=self.checkpoint_dir,
+                                  accumulation_steps=self.grad_accumulation_steps)
+
+        return self._trainer
 
     @property
     def _logger(self):
         return logging.getLogger(__name__)
-
-    def snapshot(self, model, model_dir, prefix="best_snaphsot"):
-        snapshot_prefix = os.path.join(model_dir, prefix)
-        snapshot_path = snapshot_prefix + 'model.pt'
-
-        self._logger.info("Snapshot model to {}".format(snapshot_path))
-
-        # If nn.dataparallel, get the underlying module
-        if isinstance(model, torch.nn.DataParallel):
-            model = model.module
-
-        torch.save(model, snapshot_path)
-
-    def run_train(self, train_iter, validation_iter, model_network, loss_function, optimizer, pos_label):
-        """
-    Runs train...
-        :param pos_label:
-        :param validation_iter: Validation set
-        :param train_iter: Train Data
-        :param model_network: A neural network
-        :param loss_function: Pytorch loss function
-        :param optimizer: Optimiser
-        """
-        best_results = None
-        start = datetime.datetime.now()
-        iterations = 0
-        val_log_template = ' '.join(
-            '{:>6.0f},{:>5.0f},{:>9.0f},{:>5.0f}/{:<5.0f} {:>7.0f}%,{:>8.6f},{:8.6f},{:12.4f},{:12.4f}'.split(','))
-        val_log_template = "Run {}".format(val_log_template)
-
-        best_score = None
-
-        no_improvement_epochs = 0
-
-        if self._is_multigpu:
-            model_network = nn.DataParallel(model_network, device_ids=self.device, output_device=self._default_device)
-            self._logger.info("Using multi gpu with devices {}, default {} ".format(self.device, self._default_device))
-
-        model_network.to(device=self._default_device)
-
-        for epoch in range(self.epochs):
-            losses_train = []
-            actual_train = []
-            predicted_train = []
-
-            self._logger.debug("Running epoch {}".format(self.epochs))
-
-            for idx, batch in enumerate(train_iter):
-                self._logger.debug("Running batch {}".format(idx))
-                batch_x = batch[0].to(device=self._default_device)
-                batch_y = batch[1].to(device=self._default_device)
-
-                self._logger.debug("batch x shape is {}".format(batch_x.shape))
-
-                iterations += 1
-
-                # Step 2. train
-                model_network.train()
-                model_network.zero_grad()
-
-                # Step 3. Run the forward pass
-                # words
-                self._logger.debug("Running forward")
-                predicted = model_network(batch_x)[0]
-
-                # Step 4. Compute loss
-                self._logger.debug("Running loss")
-                loss = loss_function(predicted, batch_y) / self.accumulation_steps
-                loss.backward()
-
-                losses_train.append(loss.item())
-                actual_train.extend(batch_y.cpu().tolist())
-                predicted_train.extend(torch.max(predicted, 1)[1].view(-1).cpu().tolist())
-
-                # Step 5. Only update weights after gradients are accumulated for n steps
-                if (idx + 1) % self.accumulation_steps == 0:
-                    self._logger.debug("Running optimiser")
-                    optimizer.step()
-                    model_network.zero_grad()
-
-            # Print training set results
-            self._logger.info("Train set result details:")
-            train_loss = sum(losses_train) / len(losses_train)
-            train_score = accuracy_score(actual_train, predicted_train)
-            self._logger.info("Train set result details: {}".format(train_score))
-
-            # Print validation set results
-            self._logger.info("Validation set result details:")
-            val_actuals, val_predicted, val_loss = self.validate(loss_function, model_network, validation_iter)
-            val_score = accuracy_score(val_actuals, val_predicted)
-            self._logger.info("Validation set result details: {} ".format(val_score))
-
-            # Snapshot best score
-            if best_score is None or val_score > best_score:
-                best_results = (val_score, val_actuals, val_predicted)
-                self._logger.info(
-                    "Snapshotting because the current score {} is greater than {} ".format(val_score, best_score))
-                self.snapshot(model_network, model_dir=self.model_dir)
-                best_score = val_score
-                no_improvement_epochs = 0
-            else:
-                no_improvement_epochs += 1
-
-            # Checkpoint
-            if self.checkpoint_dir and (epoch % self.checkpoint_frequency == 0):
-                self.create_checkpoint(model_network, self.checkpoint_dir)
-
-            # evaluate performance on validation set periodically
-            self._logger.info(val_log_template.format((datetime.datetime.now() - start).seconds,
-                                                      epoch, iterations, 1 + len(batch_x), len(train_iter),
-                                                      100. * (1 + len(batch_x)) / len(train_iter), train_loss,
-                                                      val_loss, train_score,
-                                                      val_score))
-
-            print("###score: train_loss### {}".format(train_loss))
-            print("###score: val_loss### {}".format(val_loss))
-            print("###score: train_score### {}".format(train_score))
-            print("###score: val_score### {}".format(val_score))
-
-            if no_improvement_epochs > self.early_stopping_patience:
-                self._logger.info("Early stopping.. with no improvement in {}".format(no_improvement_epochs))
-                break
-
-        return best_results
-
-    def validate(self, loss_function, model_network, val_iter):
-        # switch model to evaluation mode
-        model_network.eval()
-
-        # total loss
-        val_loss = 0
-
-        actuals = torch.tensor([], dtype=torch.long).to(device=self._default_device)
-        predicted = torch.tensor([], dtype=torch.long).to(device=self._default_device)
-
-        with torch.no_grad():
-            for idx, val in enumerate(val_iter):
-                val_batch_idx = val[0].to(device=self._default_device)
-                val_y = val[1].to(device=self._default_device)
-
-                pred_batch_y = model_network(val_batch_idx)[0]
-
-                # compute loss
-                val_loss += loss_function(pred_batch_y, val_y).item()
-
-                actuals = torch.cat([actuals, val_y])
-                pred_flat = torch.max(pred_batch_y, dim=1)[1].view(-1)
-                predicted = torch.cat([predicted, pred_flat])
-
-        # Average loss
-        val_loss = val_loss / len(actuals)
-        return actuals.cpu().tolist(), predicted.cpu().tolist(), val_loss
-
-    def create_checkpoint(self, model, checkpoint_dir):
-        checkpoint_path = os.path.join(checkpoint_dir, 'checkpoint.pt')
-
-        self._logger.info("Checkpoint model to {}".format(checkpoint_path))
-
-        # If nn.dataparallel, get the underlying module
-        if isinstance(model, torch.nn.DataParallel):
-            model = model.module
-
-        torch.save({
-            'model_state_dict': model.state_dict(),
-        }, checkpoint_path)
-
-    def try_load_model_from_checkpoint(self):
-        loaded_weights = None
-        if self.checkpoint_dir is not None:
-            model_files = list(glob.glob("{}/*.pt".format(self.checkpoint_dir)))
-            if len(model_files) > 0:
-                model_file = model_files[0]
-                self._logger.info(
-                    "Loading checkpoint {} , found {} checkpoint files".format(model_file, len(model_files)))
-                checkpoint = torch.load(model_file)
-                loaded_weights = checkpoint['model_state_dict']
-        return loaded_weights
