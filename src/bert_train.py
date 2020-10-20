@@ -222,7 +222,7 @@ class Train:
             'model_state_dict': model.state_dict(),
         }, checkpoint_path)
 
-    def try_load_model_from_checkpoint(self):
+    def try_load_statedict_from_checkpoint(self):
         loaded_weights = None
         if self.checkpoint_dir is not None:
             model_files = list(glob.glob("{}/*.pt".format(self.checkpoint_dir)))
