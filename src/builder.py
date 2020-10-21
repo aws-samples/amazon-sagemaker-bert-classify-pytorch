@@ -79,10 +79,13 @@ class Builder:
         # If checkpoint file is available, load from checkpoint
         state_dict = self.get_trainer().try_load_statedict_from_checkpoint()
 
-        # Only load from BERT pretrained when no checkpoint is available
-        self._logger.info("checkpoint models found {}".format(state_dict is not None))
         self._network = BertModel(self._bert_model_name, self.get_label_mapper().num_classes,
-                                  fine_tune=self.fine_tune, state_dict=state_dict)
+                                  fine_tune=self.fine_tune)
+
+        if state_dict is not None:
+            # Only load from BERT pretrained when no checkpoint is available
+            self._logger.info("checkpoint models found")
+            self._network.load_state_dict(state_dict)
 
         return self._network
 
