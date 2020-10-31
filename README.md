@@ -21,6 +21,24 @@
  2. Create a label mapper class, that implements abstract class [LabelMapperBase](src/label_mapper_base.py), to maps string labels to zero indexed integer labels. See an example implementation [dbpedia_dataset_label_mapper.py](src/dbpedia_dataset_label_mapper.py).
  3. Replace the use of classes `DbpediaDataset` and `DbpediaLabelMapper` in [builder.py](src/builder.py) with your own custom dataset and label mapper class
  
+ 
+ ## Running locally
+ 1. Install python 3.7.4
+ 
+ 1. Set up requirements. 
+    
+    ```bash
+    pip install -r tests/requirements.txt
+    ```
+    
+ 1. Verify set up
+    
+    ```bash
+    export PYTHONPATH=./src
+    pytest
+    ```
+    
+ 
  ## Security
  
  See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.

@@ -1,2 +1,1 @@
-torch==1.4.0
-transformers==2.3.0
+-r requirements.txt
