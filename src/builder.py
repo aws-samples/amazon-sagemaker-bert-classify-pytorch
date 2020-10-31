@@ -68,13 +68,18 @@ class Builder:
         self._token_lower_case = False
 
     def get_preprocessor(self):
+        self._logger.info("Retrieving Tokeniser")
         tokeniser = BertTokenizer.from_pretrained(self._bert_model_name, do_lower_case=self._token_lower_case)
         preprocessor = PreprocessorBertTokeniser(max_feature_len=self._max_seq_len, tokeniser=tokeniser)
+        self._logger.info("Completed retrieving Tokeniser")
+
         return preprocessor
 
     def get_network(self):
         # If network already loaded simply return
         if self._network is not None: return self._network
+
+        self._logger.info("Retrieving model")
 
         # If checkpoint file is available, load from checkpoint
         state_dict = self.get_trainer().try_load_statedict_from_checkpoint()
@@ -86,6 +91,9 @@ class Builder:
             # Only load from BERT pretrained when no checkpoint is available
             self._logger.info("checkpoint models found")
             self._network.load_state_dict(state_dict)
+
+        self._logger.info("Retrieving model complete")
+
 
         return self._network
 
