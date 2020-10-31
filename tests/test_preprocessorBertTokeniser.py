@@ -17,7 +17,7 @@
 
 from unittest import TestCase
 
-from src.preprocessor_bert_tokeniser import PreprocessorBertTokeniser
+from preprocessor_bert_tokeniser import PreprocessorBertTokeniser
 
 
 class TestPreprocessorBertTokeniser(TestCase):
