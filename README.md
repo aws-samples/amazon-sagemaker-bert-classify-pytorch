@@ -5,7 +5,7 @@
  - Train [BERT](https://www.aclweb.org/anthology/N19-1423/), using [huggingface](https://huggingface.co/transformers/pretrained_models.html) on [Amazon Sagemaker](https://docs.aws.amazon.com/sagemaker/latest/dg/pytorch.html) using [Spot instances](https://docs.aws.amazon.com/sagemaker/latest/dg/model-managed-spot-training.html). Spot instances allow you to lower training costs.
  - Use **multi-gpu training** where the instance has multiple gpus
  - Implement [Sagemaker checkpointing](https://docs.aws.amazon.com/sagemaker/latest/dg/model-checkpoints.html) , so when a spot instance terminates, you can resume training from the checkpoint
- - Use [gradient accumulation](https://medium.com/huggingface/training-larger-batches-practical-tips-on-1-gpu-multi-gpu-distributed-setups-ec88c3e51255) to train with normal batch sizes even with longer sequences
+ - Use [gradient accumulation](https://medium.com/huggingface/training-larger-batches-practical-tips-on-1-gpu-multi-gpu-distributed-setups-ec88c3e51255) to train with normal batch sizes.
  - [Deploy](https://docs.aws.amazon.com/sagemaker/latest/dg/deploy-model.html) the BERT model for inference. 
 
   
