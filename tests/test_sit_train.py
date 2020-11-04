@@ -13,7 +13,7 @@ class TestSitTrain(TestCase):
     def test_run_with_no_exception(self):
         # Arrange
         train_data_file = os.path.join(os.path.dirname(__file__), "sample_dbpedia.csv")
-        classes_file = os.path.join(os.path.dirname(__file__), "sample_dbpedia.csv")
+        classes_file = os.path.join(os.path.dirname(__file__), "classes.txt")
         tempdir = tempfile.mkdtemp()
         batch = 3
 
