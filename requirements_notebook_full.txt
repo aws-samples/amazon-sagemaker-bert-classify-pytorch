@@ -1,0 +1,2 @@
+-r requirements_notebook.txt
+jupyter==1.0.0
