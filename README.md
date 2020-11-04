@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/aws-samples/amazon-sagemaker-bert-classify-pytorch.svg?branch=master)](https://travis-ci.org/aws-samples/amazon-sagemaker-bert-classify-pytorch)
+
 # Amazon Sagemaker BERT text classification using PyTorch
  
  This sample show you how to 
