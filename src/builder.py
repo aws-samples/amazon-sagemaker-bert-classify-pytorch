@@ -67,10 +67,26 @@ class Builder:
         self._bert_model_name = "bert-base-cased"
         self._token_lower_case = False
 
+        self._bert_config = None
+        self._tokenisor = None
+
+    @property
+    def _logger(self):
+        return logging.getLogger(__name__)
+
+    def set_bert_config(self, value):
+        self._bert_config = value
+
+    def set_tokensior(self, value):
+        self._tokenisor = value
+
     def get_preprocessor(self):
         self._logger.info("Retrieving Tokeniser")
-        tokeniser = BertTokenizer.from_pretrained(self._bert_model_name, do_lower_case=self._token_lower_case)
-        preprocessor = PreprocessorBertTokeniser(max_feature_len=self._max_seq_len, tokeniser=tokeniser)
+
+        if self._tokenisor is None:
+            self._tokenisor = BertTokenizer.from_pretrained(self._bert_model_name, do_lower_case=self._token_lower_case)
+
+        preprocessor = PreprocessorBertTokeniser(max_feature_len=self._max_seq_len, tokeniser=self._tokenisor)
         self._logger.info("Completed retrieving Tokeniser")
 
         return preprocessor
@@ -85,7 +101,7 @@ class Builder:
         state_dict = self.get_trainer().try_load_statedict_from_checkpoint()
 
         self._network = BertModel(self._bert_model_name, self.get_label_mapper().num_classes,
-                                  fine_tune=self.fine_tune)
+                                  fine_tune=self.fine_tune, bert_config=self._bert_config)
 
         if state_dict is not None:
             # Only load from BERT pretrained when no checkpoint is available
@@ -149,6 +165,3 @@ class Builder:
 
         return self._trainer
 
-    @property
-    def _logger(self):
-        return logging.getLogger(__name__)
